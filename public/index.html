@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestion de tâches</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 0 10px; }
+    h1 { color: #1F3A5F; }
+    form { display: flex; gap: 8px; margin-bottom: 20px; }
+    input { flex: 1; padding: 8px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #ddd; }
+    .finie span { text-decoration: line-through; color: gray; }
+  </style>
+</head>
+<body>
+  <h1>Mes tâches</h1>
+  <form id="formulaire">
+    <input id="titre" placeholder="Nouvelle tâche..." required>
+    <button type="submit">Ajouter</button>
+  </form>
+  <ul id="liste"></ul>
+
+  <script>
+    const liste = document.getElementById('liste');
+
+    async function charger() {
+      const reponse = await fetch('/api/taches');
+      const taches = await reponse.json();
+      liste.innerHTML = '';
+      taches.forEach(t => {
+        const li = document.createElement('li');
+        if (t.terminee) li.className = 'finie';
+        li.innerHTML = `<span>${t.titre}</span>
+          <div>
+            <button onclick="basculer(${t.id}, ${!t.terminee})">${t.terminee ? 'Annuler' : 'Terminer'}</button>
+            <button onclick="supprimer(${t.id})">Supprimer</button>
+          </div>`;
+        liste.appendChild(li);
+      });
+    }
+
+    document.getElementById('formulaire').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titre = document.getElementById('titre').value;
+      await fetch('/api/taches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre })
+      });
+      e.target.reset();
+      charger();
+    });
+
+    async function basculer(id, terminee) {
+      await fetch('/api/taches/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ terminee })
+      });
+      charger();
+    }
+
+    async function supprimer(id) {
+      await fetch('/api/taches/' + id, { method: 'DELETE' });
+      charger();
+    }
+
+    charger();
+  </script>
+</body>
+</html>
